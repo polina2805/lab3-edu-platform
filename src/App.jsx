@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { lecturers } from './data/lecturers';
 import LoginModal from './components/LoginModal';
 import BookingForm from './components/BookingForm';
+import { useLocalStorage } from './hooks/useLocalStorage'; // Импортируем хук
 import './App.css';
 
 function App() {
@@ -11,7 +12,22 @@ function App() {
   
   // Состояния для авторизации
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [user, setUser] = useState(null); // Тут храним данные вошедшего пользователя
+  const [user, setUser] = useState(null);
+
+  // Хук для избранного
+  const [favorites, setFavorites] = useLocalStorage('favorite_lecturers', []);
+
+  // НОВОЕ: Состояние для фильтра "Только избранные"
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+
+  const toggleFavorite = (e, id) => {
+    e.stopPropagation(); // Чтобы не открывался профиль при клике на сердечко
+    if (favorites.includes(id)) {
+      setFavorites(favorites.filter(favId => favId !== id)); // Удаляем
+    } else {
+      setFavorites([...favorites, id]); // Добавляем
+    }
+  };
 
   const openProfile = (lecturer) => {
     setSelectedLecturer(lecturer);
@@ -26,13 +42,20 @@ function App() {
 
   const handleLogin = (email) => {
     setUser({ email });
-    setIsLoginModalOpen(false); // Закрываем окно после входа
+    setIsLoginModalOpen(false);
   };
 
   const handleLogout = () => {
     setUser(null);
     goHome();
   };
+
+  // НОВОЕ: Фильтрация с учетом избранного
+  const filteredLecturers = lecturers.filter(lecturer => {
+    const matchesSearch = lecturer.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFav = showOnlyFavorites ? favorites.includes(lecturer.id) : true;
+    return matchesSearch && matchesFav;
+  });
 
   return (
     <div className="app-container">
@@ -51,7 +74,6 @@ function App() {
           </nav>
 
           <div className="header-actions">
-            {/* Если пользователь вошел, показываем Личный кабинет, иначе - Войти */}
             {user ? (
               <div className="user-info">
                 <span className="user-email">{user.email}</span>
@@ -81,7 +103,6 @@ function App() {
               <div className="about-text">
                 <h2>Наши лекторы — признанные специалисты в своих областях, готовые делиться опытом и знаниями.</h2>
                 
-                {/* Новая кнопка */}
                 <button 
                   className="cta-btn" 
                   onClick={() => document.getElementById('lecturers').scrollIntoView({ behavior: 'smooth' })}
@@ -136,46 +157,76 @@ function App() {
               </div>
             </section>
 
-                  {/* ================= БЛОК ЛЕКТОРЫ ================= */}
-                  <section id="lecturers" className="section-lecturers">
+            {/* ================= БЛОК ЛЕКТОРЫ ================= */}
+            <section id="lecturers" className="section-lecturers">
               <h2 className="section-title-left">Лекторы</h2>
               
-              {/* Строка поиска */}
-              <div className="search-container">
-                <input 
-                  type="text" 
-                  className="search-input"
-                  placeholder="Поиск лектора по имени (например, Петров)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {/* Иконка лупы (просто для красоты) */}
-                <span className="search-icon">🔍</span>
+              {/* Обертка для поиска и фильтра */}
+              <div className="search-container" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input 
+                    type="text" 
+                    className="search-input"
+                    placeholder="Поиск лектора по имени..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                  <span className="search-icon" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>🔍</span>
+                </div>
+                
+                {/* НОВАЯ КНОПКА ФИЛЬТРА */}
+                <button 
+                  onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                  style={{ 
+                    padding: '10px 15px', 
+                    cursor: 'pointer', 
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    backgroundColor: showOnlyFavorites ? '#ffe6e6' : '#fff',
+                    fontWeight: showOnlyFavorites ? 'bold' : 'normal',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  {showOnlyFavorites ? '❤️ Избранные' : '🤍 Все лекторы'}
+                </button>
               </div>
 
               <div className="grid-lecturers">
-                {/* Фильтруем массив лекторов */}
-                {lecturers
-                  .filter(lecturer => 
-                    lecturer.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map(lecturer => (
-                    <div key={lecturer.id} className="lecturer-card-new" onClick={() => openProfile(lecturer)}>
-                      <div className="lecturer-photo-box">
-                        <img src={lecturer.photo} alt={lecturer.name} />
-                      </div>
-                      <div className="lecturer-info-new">
-                        <h3>{lecturer.name}</h3>
-                        <p className="lecturer-degree">{lecturer.degree}</p>
-                        <p className="lecturer-hint">Нажмите, чтобы узнать больше о дисциплинах и тарифах →</p>
-                      </div>
+                {/* Используем отфильтрованный массив */}
+                {filteredLecturers.map(lecturer => (
+                  <div key={lecturer.id} className="lecturer-card-new" onClick={() => openProfile(lecturer)}>
+                    <div className="lecturer-photo-box">
+                      <img src={lecturer.photo} alt={lecturer.name} />
                     </div>
+                    <div className="lecturer-info-new">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3>{lecturer.name}</h3>
+                        
+                        <button 
+                          onClick={(e) => toggleFavorite(e, lecturer.id)}
+                          style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}
+                          title="Добавить в избранное"
+                        >
+                          {favorites.includes(lecturer.id) ? '❤️' : '🤍'}
+                        </button>
+                      </div>
+
+                      <p className="lecturer-degree">{lecturer.degree}</p>
+                      <p className="lecturer-hint">Нажмите, чтобы узнать больше о дисциплинах и тарифах →</p>
+                    </div>
+                  </div>
                 ))}
               </div>
               
-              {/* Сообщение, если ничего не найдено */}
-              {lecturers.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                <p className="no-results">По запросу "{searchQuery}" ничего не найдено 😔</p>
+              {filteredLecturers.length === 0 && (
+                <p className="no-results">
+                  {showOnlyFavorites 
+                    ? 'У вас пока нет избранных лекторов 😔' 
+                    : `По запросу "${searchQuery}" ничего не найдено 😔`}
+                </p>
               )}
             </section>
           </>
@@ -194,7 +245,6 @@ function App() {
                 <p><strong>Стаж:</strong> {selectedLecturer.experience} лет</p>
                 <p><strong>Учёная степень:</strong> {selectedLecturer.degree}</p>
                 
-                {/* Новая кнопка */}
                 <button 
                   className="profile-book-btn"
                   onClick={() => document.getElementById('booking-section').scrollIntoView({ behavior: 'smooth' })}
@@ -240,7 +290,6 @@ function App() {
         )}
       </main>
 
-      {/* Модальное окно входа */}
       <LoginModal 
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
