@@ -1,16 +1,22 @@
-# React + Vite
+# Учебная платформа EduPlatform
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+SPA-приложение (Single Page Application) для поиска лекторов, просмотра их дисциплин и записи на занятия.
 
-Currently, two official plugins are available:
+## 1. Стек и версии
+* **React** (v18.2.0) — библиотека для построения интерфейсов.
+* **Vite** (v5.0.0) — сборщик проекта.
+* **Node.js** (рекомендуется v18+).
+* **CSS** — чистый CSS (без сторонних UI-библиотек и фреймворков).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 2. Команды для установки и запуска
+Для запуска проекта локально выполните следующие команды в терминале:
 
-## React Compiler
+```bash
+# Установка зависимостей
+npm install
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Запуск сервера для разработки (с hot-reload)
+npm run dev
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+# Сборка проекта для продакшена
+npm run build
